@@ -48,6 +48,7 @@ UsdPrimvarReader_float3::update()
     if (hasChanged(attrVarName)) {
         mOptionalAttributes.clear();
         mIspc.mPrimitiveAttributeType = ispc::TYPE_VEC3F;
+        mIspc.mColorAttributeIndex = -1;
         const std::string& varname = get(attrVarName);
         // We handle these special case "varname" values:
         //      "P"
@@ -113,6 +114,11 @@ UsdPrimvarReader_float3::update()
             moonray::shading::TypedAttributeKey<Vec3f> attributeKey(varname);
             mIspc.mPrimitiveAttributeIndex = attributeKey;
             mOptionalAttributes.push_back(attributeKey);
+            // A float3 primvar may also be a color (color3f), which the
+            // geometry provides as Rgb, so read that when there's no Vec3f.
+            moonray::shading::TypedAttributeKey<Color> colorKey(varname);
+            mIspc.mColorAttributeIndex = colorKey;
+            mOptionalAttributes.push_back(colorKey);
         }
         ::moonshine::primvar::createLogEvent("vec3f",
                                              varname,
@@ -174,6 +180,10 @@ UsdPrimvarReader_float3::sample(const scene_rdl2::rdl2::Map *self, moonray::shad
                 sample->g = v3.y;
                 sample->b = v3.z;
             }
+        } else if (me->mIspc.mColorAttributeIndex >= 0 &&
+                   state.isProvided(me->mIspc.mColorAttributeIndex)) {
+            *sample = state.getAttribute(
+                moonray::shading::TypedAttributeKey<Color>(me->mIspc.mColorAttributeIndex));
         } else {
             // the primitive attribute is unavailable, use fallback parameter
             const Vec3f& v3 = evalVec3f(me, attrFallback, tls, state);

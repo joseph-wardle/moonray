@@ -56,6 +56,9 @@ sample(const uniform Map* uniform map,
                 sample.g = v3.y;
                 sample.b = v3.z;
             }
+        } else if (me->mColorAttributeIndex >= 0 &&
+                   isProvided(state, me->mColorAttributeIndex)) {
+            sample = getColorAttribute(tls, state, me->mColorAttributeIndex);
         } else {
             // the primitive attribute is unavailable
             const varying Vec3f v3 = evalAttrFallback(map, tls, state);

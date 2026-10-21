@@ -42,6 +42,8 @@ struct UsdPrimvarReader
 {
     uniform int mPrimitiveAttributeIndex;
     uniform int mPrimitiveAttributeType;
+    // Rgb key for the same name, read when there is no Vec3f; -1 if unused
+    uniform int mColorAttributeIndex;
     uniform int mAttributeMapType;
     uniform int mMissingAttributeEvent;
     const uniform Xform * uniform mXform;
