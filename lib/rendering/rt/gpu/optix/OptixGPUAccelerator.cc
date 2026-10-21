@@ -26,8 +26,33 @@
 #include <scene_rdl2/render/util/BitUtils.h>
 #include <scene_rdl2/render/util/GetEnv.h>
 
+#include <dlfcn.h>
+#include <filesystem>
+
 namespace moonray {
 namespace rt {
+
+// Install root holding shaders/OptixGPUPrograms.ptx. REZ_MOONRAY_ROOT wins
+// when set (Rez environments, scripts/setup.sh); otherwise derive it from
+// where this library is installed (<root>/lib64/librendering_rt.so), so a
+// plain install works without any environment setup.
+static std::string
+moonrayRootPath()
+{
+    const std::string fromEnv = scene_rdl2::util::getenv<std::string>("REZ_MOONRAY_ROOT");
+    if (!fromEnv.empty()) {
+        return fromEnv;
+    }
+    Dl_info info;
+    if (dladdr(reinterpret_cast<const void*>(&moonrayRootPath), &info) && info.dli_fname) {
+        std::error_code ec;
+        const std::filesystem::path lib = std::filesystem::canonical(info.dli_fname, ec);
+        if (!ec) {
+            return lib.parent_path().parent_path().string();
+        }
+    }
+    return {};
+}
 
 
 // Optix will call this callback for information / error messages.
@@ -894,8 +919,7 @@ OptixGPUAccelerator::OptixGPUAccelerator(bool allowUnsupportedFeatures,
         OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE |
         OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM);
 
-    const std::string moonrayRootPath = scene_rdl2::util::getenv<std::string>("REZ_MOONRAY_ROOT");
-    const std::string ptxPath = moonrayRootPath + "/shaders/OptixGPUPrograms.ptx";
+    const std::string ptxPath = moonrayRootPath() + "/shaders/OptixGPUPrograms.ptx";
     scene_rdl2::logging::Logger::info("GPU: Loading .ptx: ", ptxPath);
 
     OptixModuleCompileOptions moduleCompileOptions = {
