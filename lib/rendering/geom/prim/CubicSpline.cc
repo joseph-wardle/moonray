@@ -126,6 +126,7 @@ CubicSpline::postIntersect(mcrt_common::ThreadLocalState &tls,
     // The St value is read from the explicit "uv" primitive
     // attribute if it exists.
     Vec2f St;
+    bool parametricSt = false;
     if (primitiveAttributes->isSupported(shading::StandardAttributes::sSt)) {
         interpolator.interpolate(shading::StandardAttributes::sSt,
                                  reinterpret_cast<char*>(&St));
@@ -138,6 +139,7 @@ CubicSpline::postIntersect(mcrt_common::ThreadLocalState &tls,
         St[0] = ststart + ray.u * stSpanRange;
         // ray.v is in (-1,1) so we need to remap to (0,1)
         St[1] = ray.v * 0.5f + 0.5f;
+        parametricSt = true;
     }
 
     Vec3f N = scene_rdl2::math::zero;
@@ -202,7 +204,8 @@ CubicSpline::postIntersect(mcrt_common::ThreadLocalState &tls,
                                          St,
                                          dPds,
                                          dPdt,
-                                         true, // has derivatives
+                                         // dPds and dPdt are not with respect to an authored St
+                                         parametricSt, // has derivatives
                                          hasExplicitAttributes);
 
 
